@@ -53,13 +53,13 @@ instance-groups:
 					Name:      "opaque-manifest",
 					Namespace: "default",
 				},
-				Data: map[string][]byte{"manifest": []byte(`---
+				StringData: map[string]string{"manifest": `---
 instance-groups:
   - name: component3
     instances: 1
   - name: component4
     instances: 2
-`)},
+`},
 			},
 			&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
@@ -123,11 +123,11 @@ instance-groups:
 					Name:      "opaque-ops",
 					Namespace: "default",
 				},
-				Data: map[string][]byte{"ops": []byte(`---
+				StringData: map[string]string{"ops": `---
 - type: replace
   path: /instance-groups/name=component1?/instances
   value: 3
-`)},
+`},
 			},
 		)
 

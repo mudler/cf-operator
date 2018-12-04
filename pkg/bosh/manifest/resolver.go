@@ -95,11 +95,10 @@ func (r *ResolverImpl) getRefData(namespace string, manifestType string, manifes
 		if err != nil {
 			return refData, errors.Wrapf(err, "Failed to retrieve %s from secret '%s/%s' via client.Get", refKey, namespace, manifestRef)
 		}
-		encodedData, ok := opsSecret.Data[refKey]
+		refData, ok = opsSecret.StringData[refKey]
 		if !ok {
 			return refData, fmt.Errorf("secert '%s/%s' doesn't contain key %s", namespace, manifestRef, refKey)
 		}
-		refData = string(encodedData)
 	case bdc.URLType:
 		httpResponse, err := http.Get(manifestRef)
 		if err != nil {
