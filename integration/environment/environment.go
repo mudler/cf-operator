@@ -97,7 +97,7 @@ func (e *Environment) setupCFOperator() (err error) {
 }
 
 func (e *Environment) setupKube() (err error) {
-	location := os.Getenv("KUBE_CONFIG")
+	location := os.Getenv("KUBECONFIG")
 	if location == "" {
 		location = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 	}
