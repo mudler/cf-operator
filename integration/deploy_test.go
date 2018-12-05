@@ -28,7 +28,7 @@ var _ = Describe("Deploy", func() {
 			Expect(err).NotTo(HaveOccurred(), "error waiting for pod from deployment")
 		})
 
-		It("should deploy manifest with multiple ops correctly", func() {
+		FIt("should deploy manifest with multiple ops correctly", func() {
 			tearDown, err := env.CreateConfigMap(env.Namespace, env.DefaultBOSHManifest("manifest"))
 			Expect(err).NotTo(HaveOccurred())
 			defer tearDown()
@@ -37,11 +37,11 @@ var _ = Describe("Deploy", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer tearDown()
 
-			tearDown, err = env.CreateSecret(env.Namespace, env.InterpolateOpsSecret("bosh-ops"))
+			tearDown, err = env.CreateSecret(env.Namespace, env.InterpolateOpsSecret("bosh-ops-secret"))
 			Expect(err).NotTo(HaveOccurred())
 			defer tearDown()
 
-			_, tearDown, err = env.CreateFissileCR(env.Namespace, env.InterpolateFissileCR("test", "manifest", "bosh-ops"))
+			_, tearDown, err = env.CreateFissileCR(env.Namespace, env.InterpolateFissileCR("test", "manifest", "bosh-ops", "bosh-ops-secret"))
 			Expect(err).NotTo(HaveOccurred())
 			defer tearDown()
 

@@ -123,14 +123,14 @@ func (c *Catalog) FissileCRWithWrongTypeOps(name, manifestRef string, opsRef str
 }
 
 // InterpolateFissileCR fissile deployment CR
-func (c *Catalog) InterpolateFissileCR(name, manifestRef, opsRef string) fisv1.BOSHDeployment {
+func (c *Catalog) InterpolateFissileCR(name, manifestRef, opsConfigMapRef, opsSecretRef string) fisv1.BOSHDeployment {
 	return fisv1.BOSHDeployment{
 		ObjectMeta: v1.ObjectMeta{Name: name},
 		Spec: fisv1.BOSHDeploymentSpec{
 			Manifest: fisv1.Manifest{Ref: manifestRef, Type: fisv1.ConfigMapType},
 			Ops: []fisv1.Ops{
-				{Ref: opsRef, Type: fisv1.ConfigMapType},
-				{Ref: opsRef, Type: fisv1.SecretType},
+				{Ref: opsConfigMapRef, Type: fisv1.ConfigMapType},
+				{Ref: opsSecretRef, Type: fisv1.SecretType},
 			},
 		},
 	}
