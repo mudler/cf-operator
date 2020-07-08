@@ -208,18 +208,12 @@ func AddBDPLStatusReconciler(ctx context.Context, config *config.Config, mgr man
 			return false
 		},
 	}
-	err = c.Watch(&source.Kind{Type: &qstsv1a1.QuarksStatefulSet{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &qstsv1a1.QuarksStatefulSet{}, // XXX: ??
-	}, certPred)
+	err = c.Watch(&source.Kind{Type: &qstsv1a1.QuarksStatefulSet{}}, &handler.EnqueueRequestForObject{}, certPred)
 	if err != nil {
 		return errors.Wrapf(err, "Watching QSTS in QuarksStatefulSetStatus controller failed.")
 	}
 
-	err = cjobs.Watch(&source.Kind{Type: &qjv1a1.QuarksJob{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &qstsv1a1.QuarksStatefulSet{}, // XXX: ??
-	}, certPred)
+	err = cjobs.Watch(&source.Kind{Type: &qjv1a1.QuarksJob{}}, &handler.EnqueueRequestForObject{}, certPred)
 	if err != nil {
 		return errors.Wrapf(err, "Watching QSTS in QuarksStatefulSetStatus controller failed.")
 	}
