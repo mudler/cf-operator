@@ -103,7 +103,8 @@ var _ = Describe("Deploy", func() {
 			Expect(svc.Spec.Ports[0].Port).To(Equal(int32(4222)))
 		})
 
-		It("should deploy manifest with multiple ops correctly", func() {
+		FIt("should deploy manifest with multiple ops correctly", func() {
+			var bdpl *bdv1.BOSHDeployment
 			tearDown, err := env.CreateConfigMap(env.Namespace, env.BOSHManifestConfigMap(manifestName, bm.Gora))
 			Expect(err).NotTo(HaveOccurred())
 			tearDowns = append(tearDowns, tearDown)
@@ -116,7 +117,7 @@ var _ = Describe("Deploy", func() {
 			Expect(err).NotTo(HaveOccurred())
 			tearDowns = append(tearDowns, tearDown)
 
-			_, tearDown, err = env.CreateBOSHDeployment(env.Namespace, env.InterpolateBOSHDeployment(deploymentName, manifestName, "bosh-ops", "bosh-ops-secret"))
+			bdpl, tearDown, err = env.CreateBOSHDeployment(env.Namespace, env.InterpolateBOSHDeployment(deploymentName, manifestName, "bosh-ops", "bosh-ops-secret"))
 			Expect(err).NotTo(HaveOccurred())
 			tearDowns = append(tearDowns, tearDown)
 
@@ -127,6 +128,11 @@ var _ = Describe("Deploy", func() {
 			sts, err := env.GetStatefulSet(env.Namespace, "quarks-gora")
 			Expect(err).NotTo(HaveOccurred(), "error getting statefulset for deployment")
 			Expect(*sts.Spec.Replicas).To(BeEquivalentTo(3))
+
+			bdpl, err = env.GetBOSHDeployment(env.Namespace, deploymentName)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(bdpl.Status.DeployedInstanceGroups).To(BeEquivalentTo(1))
+
 		})
 
 	})
