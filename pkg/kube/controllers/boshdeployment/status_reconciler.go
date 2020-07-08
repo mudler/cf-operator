@@ -9,7 +9,6 @@ import (
 	qstsv1a1 "code.cloudfoundry.org/quarks-operator/pkg/kube/apis/quarksstatefulset/v1alpha1"
 	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
-	log "code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,14 +92,14 @@ func (r *ReconcileBoshDeploymentQJobStatus) Reconcile(request reconcile.Request)
 	deploymentName, ok := qJob.GetLabels()[bdv1.LabelDeploymentName]
 	if !ok {
 		return reconcile.Result{},
-			log.WithEvent(qJob, "LabelMissingError").Errorf(ctx, "There's no label for a BoshDeployment name on the QSTS '%s'", request.NamespacedName)
+			ctxlog.WithEvent(qJob, "LabelMissingError").Errorf(ctx, "There's no label for a BoshDeployment name on the QSTS '%s'", request.NamespacedName)
 	}
 
 	bdpl := &bdv1.BOSHDeployment{}
 	err = r.client.Get(ctx, types.NamespacedName{Namespace: request.Namespace, Name: deploymentName}, bdpl)
 	if err != nil {
 		return reconcile.Result{},
-			log.WithEvent(qJob, "GetBOSHDeployment").Errorf(ctx, "Failed to get BoshDeployment instance '%s/%s': %v", request.Namespace, deploymentName, err)
+			ctxlog.WithEvent(qJob, "GetBOSHDeployment").Errorf(ctx, "Failed to get BoshDeployment instance '%s/%s': %v", request.Namespace, deploymentName, err)
 	}
 	if qJob.Status.Completed {
 		bdpl.Status.CompletedJobCount = bdpl.Status.CompletedJobCount + 1
@@ -149,14 +148,14 @@ func (r *ReconcileBoshDeploymentQSTSStatus) Reconcile(request reconcile.Request)
 	deploymentName, ok := qStatefulSet.GetLabels()[bdv1.LabelDeploymentName]
 	if !ok {
 		return reconcile.Result{},
-			log.WithEvent(qStatefulSet, "LabelMissingError").Errorf(ctx, "There's no label for a BoshDeployment name on the QSTS '%s'", request.NamespacedName)
+			ctxlog.WithEvent(qStatefulSet, "LabelMissingError").Errorf(ctx, "There's no label for a BoshDeployment name on the QSTS '%s'", request.NamespacedName)
 	}
 
 	bdpl := &bdv1.BOSHDeployment{}
 	err = r.client.Get(ctx, types.NamespacedName{Namespace: request.Namespace, Name: deploymentName}, bdpl)
 	if err != nil {
 		return reconcile.Result{},
-			log.WithEvent(qStatefulSet, "GetBOSHDeployment").Errorf(ctx, "Failed to get BoshDeployment instance '%s/%s': %v", request.Namespace, deploymentName, err)
+			ctxlog.WithEvent(qStatefulSet, "GetBOSHDeployment").Errorf(ctx, "Failed to get BoshDeployment instance '%s/%s': %v", request.Namespace, deploymentName, err)
 	}
 	if qStatefulSet.Status.Ready {
 		bdpl.Status.DeployedInstanceGroups = bdpl.Status.DeployedInstanceGroups + 1
