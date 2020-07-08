@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-// NewStatusReconciler returns a new reconcile.Reconciler for QuarksStatefulSets Status
+// NewStatusQSTSReconciler returns a new reconcile.Reconciler for QuarksStatefulSets Status
 func NewStatusQSTSReconciler(ctx context.Context, config *config.Config, mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileBoshDeploymentQSTSStatus{
 		ctx:    ctx,
@@ -35,7 +35,7 @@ func NewStatusQSTSReconciler(ctx context.Context, config *config.Config, mgr man
 	}
 }
 
-// NewStatusReconciler returns a new reconcile.Reconciler for QuarksStatefulSets Status
+// NewQJobStatusReconciler returns a new reconcile.Reconciler for QuarksStatefulSets Status
 func NewQJobStatusReconciler(ctx context.Context, config *config.Config, mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileBoshDeploymentQJobStatus{
 		ctx:    ctx,
@@ -45,7 +45,7 @@ func NewQJobStatusReconciler(ctx context.Context, config *config.Config, mgr man
 	}
 }
 
-// ReconcileBoshDeploymentStatus reconciles an QuarksStatefulSet object for its status
+// ReconcileBoshDeploymentQSTSStatus reconciles an QuarksStatefulSet object for its status
 type ReconcileBoshDeploymentQSTSStatus struct {
 	ctx    context.Context
 	client client.Client
@@ -53,7 +53,7 @@ type ReconcileBoshDeploymentQSTSStatus struct {
 	config *config.Config
 }
 
-// ReconcileBoshDeploymentStatus reconciles an QuarksStatefulSet object for its status
+// ReconcileBoshDeploymentQJobStatus reconciles an QuarksStatefulSet object for its status
 type ReconcileBoshDeploymentQJobStatus struct {
 	ctx    context.Context
 	client client.Client
