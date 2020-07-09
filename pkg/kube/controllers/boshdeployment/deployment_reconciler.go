@@ -29,6 +29,9 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
 )
 
+// BDPLStateCreating is the Bosh Deployment Status spec Creating State
+const BDPLStateCreating = "Creating/Updating"
+
 // JobFactory creates Jobs for a given manifest
 type JobFactory interface {
 	VariableInterpolationJob(namespace string, deploymentName string, manifest bdm.Manifest) (*qjv1a1.QuarksJob, error)
@@ -201,6 +204,19 @@ func (r *ReconcileBOSHDeployment) Reconcile(request reconcile.Request) (reconcil
 	if err != nil {
 		return reconcile.Result{},
 			log.WithEvent(bdpl, "InstanceGroupManifestError").Errorf(ctx, "failed to create instance group manifest qJob for BOSHDeployment '%s': %v", request.NamespacedName, err)
+	}
+
+	// Update status of bdpl with the timestamp of the last reconcile
+	// and update the bdpl state spec with the initial state
+	now := metav1.Now()
+	bdpl.Status.LastReconcile = &now
+	bdpl.Status.StateTimestamp = &now
+	bdpl.Status.State = BDPLStateCreating
+
+	err = r.client.Status().Update(ctx, bdpl)
+	if err != nil {
+		log.WithEvent(bdpl, "UpdateError").Errorf(ctx, "failed to update reconcile timestamp on bdpl '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+		return reconcile.Result{Requeue: false}, nil
 	}
 
 	return reconcile.Result{}, nil
