@@ -109,7 +109,7 @@ type BOSHDeploymentStatus struct {
 	CompletedJobCount      int          `json:"completedJobCount"`
 	TotalInstanceGroups    int          `json:"totalInstanceGroups"`
 	DeployedInstanceGroups int          `json:"deployedInstanceGroups"`
-	StateTimeStamp         *metav1.Time `json:"timestamp"`
+	StateTimestamp         *metav1.Time `json:"stateTimestamp"`
 }
 
 // +genclient

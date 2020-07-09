@@ -140,19 +140,19 @@ var (
 							Type: "string",
 						},
 						"totalJobCount": {
-							Type: "int",
+							Type: "integer",
 						},
 						"completedJobCount": {
-							Type: "int",
+							Type: "integer",
 						},
 						"totalInstanceGroups": {
-							Type: "int",
+							Type: "integer",
 						},
 						"deployedInstanceGroups": {
-							Type: "int",
+							Type: "integer",
 						},
-						"string": {
-							Type: "timestamp",
+						"stateTimestamp": {
+							Type: "string",
 						},
 					},
 				},
