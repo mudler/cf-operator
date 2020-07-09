@@ -74,7 +74,7 @@ func (r *ReconcileBoshDeploymentQJobStatus) Reconcile(request reconcile.Request)
 	ctx, cancel := context.WithTimeout(r.ctx, r.config.CtxTimeOut)
 	defer cancel()
 
-	ctxlog.Info(ctx, "Reconciling qJob ", request.NamespacedName)
+	ctxlog.Info(ctx, "Reconciling Bosh Deployment from qjob ", request.NamespacedName)
 	err := r.client.Get(ctx, request.NamespacedName, qJob)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -104,13 +104,13 @@ func (r *ReconcileBoshDeploymentQJobStatus) Reconcile(request reconcile.Request)
 	if qJob.Status.Completed {
 		bdpl.Status.CompletedJobCount = bdpl.Status.CompletedJobCount + 1
 		now := metav1.Now()
-		bdpl.Status.StateTimeStamp = &now
-	}
-
-	err = r.client.Status().Update(ctx, bdpl)
-	if err != nil {
-		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
-		return reconcile.Result{Requeue: false}, nil
+		bdpl.Status.StateTimestamp = &now // Update status of bdpl with the timestamp of the last reconcile
+		bdpl.Status.LastReconcile = &now
+		err = r.client.Status().Update(ctx, bdpl)
+		if err != nil {
+			ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+			return reconcile.Result{Requeue: false}, nil
+		}
 	}
 
 	return reconcile.Result{}, nil
@@ -160,13 +160,13 @@ func (r *ReconcileBoshDeploymentQSTSStatus) Reconcile(request reconcile.Request)
 	if qStatefulSet.Status.Ready {
 		bdpl.Status.DeployedInstanceGroups = bdpl.Status.DeployedInstanceGroups + 1
 		now := metav1.Now()
-		bdpl.Status.StateTimeStamp = &now
-	}
-
-	err = r.client.Status().Update(ctx, bdpl)
-	if err != nil {
-		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
-		return reconcile.Result{Requeue: false}, nil
+		bdpl.Status.StateTimestamp = &now
+		bdpl.Status.LastReconcile = &now
+		err = r.client.Status().Update(ctx, bdpl)
+		if err != nil {
+			ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+			return reconcile.Result{Requeue: false}, nil
+		}
 	}
 
 	return reconcile.Result{}, nil
