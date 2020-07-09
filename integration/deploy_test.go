@@ -103,7 +103,7 @@ var _ = Describe("Deploy", func() {
 			Expect(svc.Spec.Ports[0].Port).To(Equal(int32(4222)))
 		})
 
-		FIt("should deploy manifest with multiple ops correctly", func() {
+		It("should deploy manifest with multiple ops correctly", func() {
 			var bdpl *bdv1.BOSHDeployment
 			tearDown, err := env.CreateConfigMap(env.Namespace, env.BOSHManifestConfigMap(manifestName, bm.Gora))
 			Expect(err).NotTo(HaveOccurred())
