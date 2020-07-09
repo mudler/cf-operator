@@ -132,7 +132,13 @@ var _ = Describe("Deploy", func() {
 			bdpl, err = env.GetBOSHDeployment(env.Namespace, deploymentName)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(bdpl.Status.DeployedInstanceGroups).To(BeEquivalentTo(1))
+			bdpl, err = env.GetBOSHDeployment(env.Namespace, deploymentName)
 
+			Expect(err).NotTo(HaveOccurred())
+			Expect(bdpl.Status.TotalInstanceGroups).To(BeEquivalentTo(1))
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(bdpl.Status.TotalJobCount).To(BeEquivalentTo(2))
 		})
 
 	})

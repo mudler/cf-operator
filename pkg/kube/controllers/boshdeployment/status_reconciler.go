@@ -7,8 +7,10 @@ import (
 
 	bdv1 "code.cloudfoundry.org/quarks-operator/pkg/kube/apis/boshdeployment/v1alpha1"
 	qstsv1a1 "code.cloudfoundry.org/quarks-operator/pkg/kube/apis/quarksstatefulset/v1alpha1"
+	"code.cloudfoundry.org/quarks-operator/pkg/kube/util/reference"
 	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
+
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,13 +108,20 @@ func (r *ReconcileBoshDeploymentQJobStatus) Reconcile(request reconcile.Request)
 		now := metav1.Now()
 		bdpl.Status.StateTimestamp = &now // Update status of bdpl with the timestamp of the last reconcile
 		bdpl.Status.LastReconcile = &now
-		err = r.client.Status().Update(ctx, bdpl)
-		if err != nil {
-			ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
-			return reconcile.Result{Requeue: false}, nil
-		}
 	}
 
+	jobs, err := reference.GetQJobsReferencedBy(ctx, r.client, *bdpl)
+	if err != nil {
+		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to get Qjobs of BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+		return reconcile.Result{Requeue: false}, nil
+	}
+	bdpl.Status.TotalJobCount = len(jobs)
+
+	err = r.client.Status().Update(ctx, bdpl)
+	if err != nil {
+		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+		return reconcile.Result{Requeue: false}, nil
+	}
 	return reconcile.Result{}, nil
 }
 
@@ -162,11 +171,19 @@ func (r *ReconcileBoshDeploymentQSTSStatus) Reconcile(request reconcile.Request)
 		now := metav1.Now()
 		bdpl.Status.StateTimestamp = &now
 		bdpl.Status.LastReconcile = &now
-		err = r.client.Status().Update(ctx, bdpl)
-		if err != nil {
-			ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
-			return reconcile.Result{Requeue: false}, nil
-		}
+	}
+
+	sts, err := reference.GetQSTSReferencedBy(ctx, r.client, *bdpl)
+	if err != nil {
+		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to get QSTS of BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+		return reconcile.Result{Requeue: false}, nil
+	}
+	bdpl.Status.TotalInstanceGroups = len(sts)
+
+	err = r.client.Status().Update(ctx, bdpl)
+	if err != nil {
+		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+		return reconcile.Result{Requeue: false}, nil
 	}
 
 	return reconcile.Result{}, nil
