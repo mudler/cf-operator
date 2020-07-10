@@ -26,6 +26,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const (
+	// BDPLStateDeployed is the Bosh Deployment Status spec Deployed State
+	BDPLStateDeployed = "Deployed"
+	// BDPLStateConverting is the Bosh Deployment Status spec State during conversion
+	BDPLStateConverting = "Converting to Kube resource"
+	// BDPLStateResolving is the Bosh Deployment Status spec during the resolving phase
+	BDPLStateResolving = "Resolving Manifest"
+)
+
 // NewStatusQSTSReconciler returns a new reconcile.Reconciler for QuarksStatefulSets Status
 func NewStatusQSTSReconciler(ctx context.Context, config *config.Config, mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileBoshDeploymentQSTSStatus{
@@ -103,26 +112,82 @@ func (r *ReconcileBoshDeploymentQJobStatus) Reconcile(request reconcile.Request)
 		return reconcile.Result{},
 			ctxlog.WithEvent(qJob, "GetBOSHDeployment").Errorf(ctx, "Failed to get BoshDeployment instance '%s/%s': %v", request.Namespace, deploymentName, err)
 	}
-	if qJob.Status.Completed {
-		bdpl.Status.CompletedJobCount = bdpl.Status.CompletedJobCount + 1
-		now := metav1.Now()
-		bdpl.Status.StateTimestamp = &now // Update status of bdpl with the timestamp of the last reconcile
-		bdpl.Status.LastReconcile = &now
-	}
 
+	// Get all QJobs from the bdpl
 	jobs, err := reference.GetQJobsReferencedBy(ctx, r.client, *bdpl)
 	if err != nil {
 		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to get Qjobs of BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
 		return reconcile.Result{Requeue: false}, nil
 	}
-	bdpl.Status.TotalJobCount = len(jobs)
 
-	err = r.client.Status().Update(ctx, bdpl)
-	if err != nil {
-		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
-		return reconcile.Result{Requeue: false}, nil
+	toUpdate := false
+	ready := 0
+
+	for _, s := range jobs {
+		if s {
+			ready++
+		}
 	}
+
+	// update job counts if necessary
+	if bdpl.Status.TotalJobCount != len(jobs) {
+		bdpl.Status.TotalJobCount = len(jobs)
+		toUpdate = true
+	}
+
+	if bdpl.Status.CompletedJobCount != ready {
+		bdpl.Status.CompletedJobCount = ready
+		toUpdate = true
+	}
+
+	toUpdate = resolveDeploymentState(bdpl) || toUpdate
+
+	if toUpdate {
+		now := metav1.Now()
+		bdpl.Status.StateTimestamp = &now
+
+		err = r.client.Status().Update(ctx, bdpl)
+		if err != nil {
+			ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+			return reconcile.Result{Requeue: false}, nil
+		}
+	}
+
 	return reconcile.Result{}, nil
+}
+
+func resolveDeploymentState(bdpl *bdv1.BOSHDeployment) bool {
+	toUpdate := false
+
+	// Computing BDPL State
+
+	// Converting state: Job are finished, but instance groups are not
+	convertingState := bdpl.Status.CompletedJobCount == bdpl.Status.TotalJobCount &&
+		bdpl.Status.TotalInstanceGroups != bdpl.Status.DeployedInstanceGroups
+
+	// Resolving state: Neither jobs or instance group are ready
+	resolvingState := bdpl.Status.CompletedJobCount != bdpl.Status.TotalJobCount &&
+		bdpl.Status.TotalInstanceGroups != bdpl.Status.DeployedInstanceGroups
+
+	// Deployed state: Jobs and instance groups are completed
+	deployedState := bdpl.Status.CompletedJobCount == bdpl.Status.TotalJobCount &&
+		bdpl.Status.TotalInstanceGroups == bdpl.Status.DeployedInstanceGroups
+
+	if convertingState && bdpl.Status.State != BDPLStateConverting {
+		bdpl.Status.State = BDPLStateConverting
+		toUpdate = true
+	}
+
+	if resolvingState && bdpl.Status.State != BDPLStateResolving {
+		bdpl.Status.State = BDPLStateResolving
+		toUpdate = true
+	}
+
+	if deployedState && bdpl.Status.State != BDPLStateDeployed {
+		bdpl.Status.State = BDPLStateDeployed
+		toUpdate = true
+	}
+	return toUpdate
 }
 
 // Reconcile reads that state of the cluster for a QuarksStatefulSet object
@@ -166,24 +231,44 @@ func (r *ReconcileBoshDeploymentQSTSStatus) Reconcile(request reconcile.Request)
 		return reconcile.Result{},
 			ctxlog.WithEvent(qStatefulSet, "GetBOSHDeployment").Errorf(ctx, "Failed to get BoshDeployment instance '%s/%s': %v", request.Namespace, deploymentName, err)
 	}
-	if qStatefulSet.Status.Ready {
-		bdpl.Status.DeployedInstanceGroups = bdpl.Status.DeployedInstanceGroups + 1
-		now := metav1.Now()
-		bdpl.Status.StateTimestamp = &now
-		bdpl.Status.LastReconcile = &now
-	}
 
+	// Get all QSTS from the bdpl
 	sts, err := reference.GetQSTSReferencedBy(ctx, r.client, *bdpl)
 	if err != nil {
 		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to get QSTS of BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
 		return reconcile.Result{Requeue: false}, nil
 	}
-	bdpl.Status.TotalInstanceGroups = len(sts)
 
-	err = r.client.Status().Update(ctx, bdpl)
-	if err != nil {
-		ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
-		return reconcile.Result{Requeue: false}, nil
+	toUpdate := false
+	ready := 0
+
+	for _, s := range sts {
+		if s {
+			ready++
+		}
+	}
+
+	// update Instance groups count if necessary
+	if bdpl.Status.TotalInstanceGroups != len(sts) {
+		bdpl.Status.TotalInstanceGroups = len(sts)
+		toUpdate = true
+	}
+
+	if bdpl.Status.DeployedInstanceGroups != ready {
+		bdpl.Status.DeployedInstanceGroups = ready
+		toUpdate = true
+	}
+
+	toUpdate = resolveDeploymentState(bdpl) || toUpdate
+
+	if toUpdate {
+		now := metav1.Now()
+		bdpl.Status.StateTimestamp = &now
+		err = r.client.Status().Update(ctx, bdpl)
+		if err != nil {
+			ctxlog.WithEvent(bdpl, "UpdateStatusError").Errorf(ctx, "Failed to update status on BDPL '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
+			return reconcile.Result{Requeue: false}, nil
+		}
 	}
 
 	return reconcile.Result{}, nil

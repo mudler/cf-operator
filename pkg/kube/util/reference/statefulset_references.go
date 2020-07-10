@@ -21,7 +21,7 @@ func GetQSTSReferencedBy(ctx context.Context, client crc.Client, bdpl bdv1.BOSHD
 
 	for _, sts := range list.Items {
 		if sts.GetLabels()[bdv1.LabelDeploymentName] == bdpl.Name {
-			bdplSTS[sts.GetName()] = true
+			bdplSTS[sts.GetName()] = sts.Status.Ready
 		}
 	}
 

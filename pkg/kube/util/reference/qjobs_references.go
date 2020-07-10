@@ -21,7 +21,7 @@ func GetQJobsReferencedBy(ctx context.Context, client crc.Client, bdpl bdv1.BOSH
 
 	for _, qjob := range list.Items {
 		if qjob.GetLabels()[bdv1.LabelDeploymentName] == bdpl.Name {
-			bdplQjobs[qjob.GetName()] = true
+			bdplQjobs[qjob.GetName()] = qjob.Status.Completed
 		}
 	}
 
