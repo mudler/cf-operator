@@ -71,6 +71,40 @@ type ReconcileBoshDeploymentQJobStatus struct {
 	config *config.Config
 }
 
+func resolveDeploymentState(bdpl *bdv1.BOSHDeployment) bool {
+	toUpdate := false
+
+	// Computing BDPL State
+
+	// Converting state: Job are finished, but instance groups are not
+	convertingState := bdpl.Status.CompletedJobCount == bdpl.Status.TotalJobCount &&
+		bdpl.Status.TotalInstanceGroups != bdpl.Status.DeployedInstanceGroups
+
+	// Resolving state: Neither jobs or instance group are ready
+	resolvingState := bdpl.Status.CompletedJobCount != bdpl.Status.TotalJobCount &&
+		bdpl.Status.TotalInstanceGroups != bdpl.Status.DeployedInstanceGroups
+
+	// Deployed state: Jobs and instance groups are completed
+	deployedState := bdpl.Status.CompletedJobCount == bdpl.Status.TotalJobCount &&
+		bdpl.Status.TotalInstanceGroups == bdpl.Status.DeployedInstanceGroups
+
+	if convertingState && bdpl.Status.State != BDPLStateConverting {
+		bdpl.Status.State = BDPLStateConverting
+		toUpdate = true
+	}
+
+	if resolvingState && bdpl.Status.State != BDPLStateResolving {
+		bdpl.Status.State = BDPLStateResolving
+		toUpdate = true
+	}
+
+	if deployedState && bdpl.Status.State != BDPLStateDeployed {
+		bdpl.Status.State = BDPLStateDeployed
+		toUpdate = true
+	}
+	return toUpdate
+}
+
 // Reconcile reads that state of the cluster for a QuarksStatefulSet object
 // and makes changes based on the state read and what is in the QuarksStatefulSet.Spec
 // Note:
@@ -154,40 +188,6 @@ func (r *ReconcileBoshDeploymentQJobStatus) Reconcile(request reconcile.Request)
 	}
 
 	return reconcile.Result{}, nil
-}
-
-func resolveDeploymentState(bdpl *bdv1.BOSHDeployment) bool {
-	toUpdate := false
-
-	// Computing BDPL State
-
-	// Converting state: Job are finished, but instance groups are not
-	convertingState := bdpl.Status.CompletedJobCount == bdpl.Status.TotalJobCount &&
-		bdpl.Status.TotalInstanceGroups != bdpl.Status.DeployedInstanceGroups
-
-	// Resolving state: Neither jobs or instance group are ready
-	resolvingState := bdpl.Status.CompletedJobCount != bdpl.Status.TotalJobCount &&
-		bdpl.Status.TotalInstanceGroups != bdpl.Status.DeployedInstanceGroups
-
-	// Deployed state: Jobs and instance groups are completed
-	deployedState := bdpl.Status.CompletedJobCount == bdpl.Status.TotalJobCount &&
-		bdpl.Status.TotalInstanceGroups == bdpl.Status.DeployedInstanceGroups
-
-	if convertingState && bdpl.Status.State != BDPLStateConverting {
-		bdpl.Status.State = BDPLStateConverting
-		toUpdate = true
-	}
-
-	if resolvingState && bdpl.Status.State != BDPLStateResolving {
-		bdpl.Status.State = BDPLStateResolving
-		toUpdate = true
-	}
-
-	if deployedState && bdpl.Status.State != BDPLStateDeployed {
-		bdpl.Status.State = BDPLStateDeployed
-		toUpdate = true
-	}
-	return toUpdate
 }
 
 // Reconcile reads that state of the cluster for a QuarksStatefulSet object

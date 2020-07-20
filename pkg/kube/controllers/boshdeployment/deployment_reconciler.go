@@ -110,7 +110,6 @@ func (r *ReconcileBOSHDeployment) Reconcile(request reconcile.Request) (reconcil
 	if bdpl.Status.LastReconcile == nil {
 		now := metav1.Now()
 		bdpl.Status.LastReconcile = &now
-
 		err = r.client.Status().Update(ctx, bdpl)
 		if err != nil {
 			return reconcile.Result{},
@@ -215,8 +214,7 @@ func (r *ReconcileBOSHDeployment) Reconcile(request reconcile.Request) (reconcil
 
 	err = r.client.Status().Update(ctx, bdpl)
 	if err != nil {
-		log.WithEvent(bdpl, "UpdateError").Errorf(ctx, "failed to update reconcile timestamp on bdpl '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
-		return reconcile.Result{Requeue: false}, nil
+		return reconcile.Result{Requeue: false}, log.WithEvent(bdpl, "UpdateError").Errorf(ctx, "failed to update reconcile timestamp on bdpl '%s' (%v): %s", request.NamespacedName, bdpl.ResourceVersion, err)
 	}
 
 	return reconcile.Result{}, nil
