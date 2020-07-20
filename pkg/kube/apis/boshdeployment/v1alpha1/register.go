@@ -152,7 +152,8 @@ var (
 							Type: "integer",
 						},
 						"stateTimestamp": {
-							Type: "string",
+							Type:     "string",
+							Nullable: true,
 						},
 					},
 				},
